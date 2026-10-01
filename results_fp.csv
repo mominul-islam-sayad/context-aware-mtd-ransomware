@@ -1,0 +1,7 @@
+config,workload,false_positive_kill_pct
+L1+L2+L4 static,user,0.0
+L1+L2+L4 static,backup,100.0
+FULL adaptive,user,0.0
+FULL adaptive,backup,100.0
+FULL context-aware,user,0.0
+FULL context-aware,backup,0.0

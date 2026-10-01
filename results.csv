@@ -1,0 +1,26 @@
+config,attack,damaged_pct,detected_pct,stopped_pct,detect_op
+baseline,dfs,100.0,0.0,0.0,
+baseline,bfs,100.0,0.0,0.0,
+baseline,random,100.0,0.0,0.0,
+baseline,ext,100.0,0.0,0.0,
+baseline,spoof,100.0,0.0,0.0,
+L1,dfs,88.3,0.0,0.0,
+L1,bfs,88.3,0.0,0.0,
+L1,random,88.3,0.0,0.0,
+L1,ext,0.0,0.0,0.0,
+L1,spoof,88.3,0.0,0.0,
+L1+L2+L4 static,dfs,7.6,100.0,100.0,16.5
+L1+L2+L4 static,bfs,8.4,100.0,100.0,18.1
+L1+L2+L4 static,random,8.9,100.0,100.0,18.9
+L1+L2+L4 static,ext,0.0,0.0,0.0,
+L1+L2+L4 static,spoof,7.6,100.0,100.0,16.5
+FULL adaptive,dfs,5.7,100.0,100.0,11.8
+FULL adaptive,bfs,5.6,100.0,100.0,11.8
+FULL adaptive,random,6.5,100.0,100.0,13.2
+FULL adaptive,ext,0.0,0.0,0.0,
+FULL adaptive,spoof,5.7,100.0,100.0,11.8
+FULL context-aware,dfs,3.4,100.0,100.0,8.3
+FULL context-aware,bfs,3.4,100.0,100.0,8.3
+FULL context-aware,random,4.0,100.0,100.0,9.6
+FULL context-aware,ext,0.0,0.0,0.0,
+FULL context-aware,spoof,10.2,100.0,100.0,25.9

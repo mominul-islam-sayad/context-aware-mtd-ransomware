@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+logs/*.log
+windows_demo/sandbox/*
+!windows_demo/sandbox/.gitkeep
+
+.DS_Store

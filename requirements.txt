@@ -1,0 +1,4 @@
+# Optional filesystem event backend for the Windows live demo.
+# The project also includes a standard-library polling fallback.
+watchdog>=4.0,<7
+
