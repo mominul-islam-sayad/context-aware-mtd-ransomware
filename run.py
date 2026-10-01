@@ -2,7 +2,6 @@
 Usage:
     python run.py demo     one attack per defense configuration, with event log
     python run.py bench    full benchmark (results.csv, results_fp.csv, results.png)
-    python run.py live     launch the Windows-only Tkinter live demo
 """
 import csv
 import random
@@ -235,14 +234,7 @@ def plot(rows, fp_rows):
     fig.savefig("results.png", dpi=150)
 
 
-def live():
-    if sys.platform != "win32":
-        print("The live Tkinter demo is intended for Windows; the research simulation still runs here.")
-    from windows_demo.app import main
-    main()
-
-
 if __name__ == "__main__":
-    {"demo": demo, "bench": bench, "live": live}.get(
+    {"demo": demo, "bench": bench}.get(
         sys.argv[1] if len(sys.argv) > 1 else "demo", demo
     )()

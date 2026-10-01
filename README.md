@@ -1,29 +1,28 @@
 # A Context-Aware, Multi-Layered Moving Target Defense Architecture for Ransomware Mitigation
 
-This is a small Computer Security course project with two deliberately separate
-parts:
+A Computer Security course project. A user-space research simulation
+(`VirtualFS`) applies four Moving Target Defense layers plus a context layer to
+every file operation, and a reproducible benchmark measures how much damage a
+safe ransomware simulator can do against each defense configuration.
 
-1. **Research simulation:** the original `VirtualFS` experiment, which makes
-   reproducible L1-L4 benchmark measurements without touching real files.
-2. **Windows live prototype:** a safe Tkinter demonstration that monitors only
-   generated files under `windows_demo/sandbox/` and stops only its own harmless
-   attack subprocess.
-
-It is not production ransomware protection and it does not use real malware.
+It is not production ransomware protection and it does not use real malware:
+the attacker only touches a temporary test workspace through `VirtualFS`.
 
 ## Security problem and MTD idea
 
 Ransomware benefits from knowing where valuable files are and from being able to
 modify many files quickly. Moving Target Defense reduces that advantage by
-changing the attack surface while observing behavior. This project demonstrates:
+changing the attack surface while observing behavior. This project implements:
 
-- **L1:** randomized internal names and harmless header mutation in the research
-  simulation.
-- **L2:** multi-depth decoys/honeyfiles.
-- **L3:** an explainable rolling-window suspicion score that shortens the mutation
-  interval as activity becomes more aggressive.
-- **L4:** a kill-switch that suspends the simulated attacker in the research
-  layer, or terminates only the live-demo subprocess.
+- **L1:** randomized file names/extensions and harmless header (magic-byte)
+  mutation, so the attacker's map of the file system goes stale.
+- **L2:** multi-depth decoys/honeyfiles, re-placed at random depths on every
+  mutation.
+- **L3:** an explainable rolling-window suspicion score (high-entropy writes,
+  stale accesses) that shortens the mutation interval as activity becomes more
+  aggressive.
+- **L4:** a kill-switch that suspends the offending process on a decoy touch or
+  a high suspicion score.
 - **Context awareness (CTX):** every suspicious event is weighted by its
   context instead of being counted the same way everywhere:
   - **Who** acted: an allow-listed tool (the backup agent) weighs 0.2x and may
@@ -35,32 +34,27 @@ changing the attack surface while observing behavior. This project demonstrates:
     and makes MTD rotate 1.5x faster; activity while the user is idle weighs
     1.25x.
 
-  The live demo applies the *what* and *when* parts (sensitive files and
-  off-hours raise the rolling score and are shown in the log and dashboard).
+## Installation
 
-## Installation on Windows
+Python 3.9 or newer, standard library only. `matplotlib` is optional and only
+needed to draw `results.png`:
 
-Install standard Windows CPython 3.9 or newer (including Tcl/Tk) and make sure
-`py` or `python` works in PowerShell. From this folder:
-
-```powershell
-py -m venv .venv
-.\.venv\Scripts\Activate.ps1
-py -m pip install -r requirements.txt
+```bash
+python -m pip install -r requirements.txt
 ```
 
-After activation, the commands below can also be run explicitly through
-`.venv\Scripts\python.exe` if the Windows `py` launcher is not configured.
+Works on Windows, macOS, and Linux (use `py` or `python3` if `python` is not on
+your PATH).
 
-`watchdog` is optional. If it is unavailable, the live demo automatically uses
-its standard-library polling monitor. No administrator privileges, Linux, WSL,
-Docker, or external services are required.
+## Run the demo
 
-## Run the original research simulation
-
-```powershell
+```bash
 python run.py demo
 ```
+
+Runs one BFS attack against each configuration and prints the event log, then
+runs a trusted night-time backup scan against the defended configurations to
+show the false positive that context awareness removes.
 
 The safe research attacker supports `dfs`, `bfs`, `random`, and `ext` traversal
 modes. The `ext` mode is intentionally documented: it assumes the attacker
@@ -70,7 +64,7 @@ result rather than a hidden benchmark artifact.
 
 ## Run the benchmark
 
-```powershell
+```bash
 python run.py bench
 ```
 
@@ -98,119 +92,44 @@ damage; the cost is the `spoof` case, where malware that hijacks a trusted
 identity is only caught when it writes a decoy (still stopped 100%, but with
 10.2% damage).
 
-## Launch the Windows live demo
-
-```powershell
-python -m windows_demo.app
-```
-
-The convenience command below is equivalent:
-
-```powershell
-python run.py live
-```
-
-The GUI buttons are:
-
-- **Initialize Sandbox:** creates 10 synthetic protected files and 4 decoys.
-- **Start Protection / Stop Protection:** starts or stops monitoring only the
-  project sandbox.
-- **Simulate Attack:** starts `windows_demo/live_attacker.py` as a subprocess.
-  It does not start protection; with protection stopped the attack runs
-  undefended and its `.locked_demo` renames remain until **Reset Sandbox**.
-- **Reset Sandbox:** stops protection/attacker, deletes only the validated demo
-  sandbox, and recreates clean files.
-- **Open Log:** opens `logs/live_demo.log`.
-
-For a visible demonstration, initialize the sandbox, start protection, perform
-a normal edit inside `windows_demo/sandbox/protected/`, then click **Simulate
-Attack**. The harmless subprocess rapidly modifies/renames generated files and
-then modifies a decoy. The monitor reports the rolling score, raises the threat
-level, triggers a safe mutation, logs `DECOY TRIGGERED`, and terminates only the
-subprocess it started.
-
-## Live demo safety design
-
-All live paths are resolved and checked to remain below
-`windows_demo/sandbox/`. The demo never monitors Documents, Desktop, Downloads,
-Windows directories, external drives, network shares, or arbitrary user paths.
-Defender-generated renames are wrapped in a short thread-safe suppression window
-so they are not scored as attacker activity. The monitor reports created,
-modified, moved, and deleted files and maintains a three-second rolling window.
-
-The live score is intentionally simple:
-
-- small isolated activity: LOW;
-- rapid modifications across several files: MEDIUM;
-- repeated rapid moves and broad activity: HIGH;
-- decoy modification, or the critical score threshold: CRITICAL.
-
-The thresholds live in `windows_demo/demo_config.py` so they are easy to explain
-and change for a classroom demonstration.
+![Benchmark results](results.png)
 
 ## Tests
 
-The tests use Python's standard `unittest` module and cover path containment,
-file/decoy generation, scoring, escalation, mutation, reset, monitoring, the
-attacker subprocess, the kill-switch, and the context layer (who/what/when
-weights, off-hours mutation speed-up, trusted backup allowed, unknown and
-spoofed attackers still stopped):
+The tests use Python's standard `unittest` module and cover the context layer:
+who/what/when weights, the off-hours mutation speed-up, the trusted backup scan
+being killed without context and allowed with it, and unknown and spoofed
+attackers still being stopped:
 
-```powershell
-py -m unittest discover -s tests -v
+```bash
+python -m unittest discover -s tests -v
 ```
 
 ## Project structure
 
 ```text
 mtd_project/
-├── mtd.py                    # original VirtualFS L1-L4 simulation
-├── attacker.py               # original safe research attacker
-├── run.py                    # demo/benchmark (+ benign user/backup workloads) + live command
+├── mtd.py                    # VirtualFS: L1-L4 defense layers + context layer
+├── attacker.py               # safe research ransomware simulator
+├── run.py                    # demo and benchmark (+ benign user/backup workloads)
 ├── results.csv               # benchmark output: attacks
 ├── results_fp.csv            # benchmark output: false positives
 ├── results.png               # benchmark chart
-├── windows_demo/
-│   ├── app.py                # Tkinter dashboard and controller
-│   ├── demo_config.py        # paths and score/mutation thresholds
-│   ├── live_attacker.py      # harmless subprocess attacker
-│   ├── live_mtd.py           # sandbox generation and file-level MTD
-│   ├── monitor.py            # watchdog backend + polling fallback
-│   └── sandbox/               # generated files only; safe to reset
-├── logs/live_demo.log       # live event log
-├── tests/                    # live-demo tests + context-simulation tests
+├── tests/                    # context-simulation tests
 ├── requirements.txt
 └── README.md
 ```
 
-## Five-minute teacher demonstration
-
-1. Run `python -m windows_demo.app`.
-2. Click **Initialize Sandbox** and show the protected and decoy counts.
-3. Click **Start Protection**; make one harmless edit to a protected sample.
-4. Point out that the status remains LOW and no process is killed.
-5. Click **Simulate Attack**.
-6. Show rapid file events, MEDIUM/HIGH scoring, and an MTD mutation.
-7. Show `DECOY TRIGGERED`, `CRITICAL THREAT DETECTED`, `KILL-SWITCH ACTIVATED`,
-   `ATTACK SIMULATOR TERMINATED`, and `ATTACK BLOCKED` in the live log.
-8. Click **Open Log** to show the persisted timestamped log.
-9. Click **Reset Sandbox** and show that counts and threat state return to the
-   initial state.
-
 ## Limitations and future work
 
-The research layer is a user-space model: real processes could bypass it
-because they do not have to use `VirtualFS`. The live layer is a small Windows
-prototype that monitors file changes, not file-open events, so the attacker
-intentionally writes to a decoy. File-change events do not say which process
-made them, so the live demo cannot apply the *who* (process trust) context;
-that part exists only in the research simulation, where trust is a fixed
-allow-list of process ids rather than code-signing verification. Polling/watchdog timing is not kernel-grade,
-the score is heuristic, the sample data is synthetic, and the kill-switch only
-controls the subprocess started by this demo. There is no network defense,
-authentication, kernel driver, machine learning, or enterprise policy engine.
+The project is a user-space model: real processes could bypass it because they
+do not have to use `VirtualFS`. Process trust is a fixed allow-list of process
+ids rather than code-signing verification, the score is heuristic, the sample
+data is synthetic, and there is no file recovery after an attack is stopped.
+There is no network defense, authentication, kernel driver, machine learning,
+or enterprise policy engine.
 
-Possible future work includes stronger Windows event integration (process
-attribution for the live context layer), signed-binary trust instead of a
-process-id allow-list, durable metadata recovery, richer benign-workload calibration, and a controlled lab
-comparison with additional safe attack patterns.
+Possible future work includes a kernel- or OS-level file monitor with process
+attribution, signed-binary trust instead of a process-id allow-list, rotating
+backup vaults with automatic restore, richer benign-workload calibration, and a
+controlled lab comparison with additional safe attack patterns.
