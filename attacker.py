@@ -32,9 +32,6 @@ class Attacker:
     def __init__(self, vfs, mode="dfs", seed=0, pid="attacker"):
         self.vfs, self.mode, self.pid = vfs, mode, pid
         self.rng = random.Random(seed)
-        self.encrypted = 0      # files successfully encrypted + renamed
-        self.stale = 0          # files missed because the name had already changed
-        self.skipped = 0        # files ignored (extension filter)
         self.stopped = False    # stopped by the kill-switch
 
     def run(self):
@@ -64,16 +61,13 @@ class Attacker:
                     if name.endswith(".locked"):
                         continue
                     if self.mode == "ext" and os.path.splitext(name)[1].lower() not in KNOWN_EXT:
-                        self.skipped += 1
                         continue
                     try:
                         data = self.vfs.read(self.pid, child)
                         self.vfs.write(self.pid, child, encrypt(data, key))
                         self.vfs.rename(self.pid, child, child + ".locked")
-                        self.encrypted += 1
                     except FileNotFoundError:
-                        self.stale += 1
+                        pass            # name already changed by MTD: stale knowledge
         except ProcessSuspended:
             self.stopped = True
-        return {"encrypted": self.encrypted, "stale": self.stale,
-                "skipped": self.skipped, "stopped": self.stopped}
+        return {"stopped": self.stopped}
