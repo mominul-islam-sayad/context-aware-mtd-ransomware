@@ -1,7 +1,8 @@
 """
-Adaptive multi-layer Moving Target Defense (MTD) against ransomware.
-User-space SIMULATION layer: every file access goes through VirtualFS, which
-applies the four defense layers. Pure standard library, works on Windows/Linux/Mac.
+Context-aware, multi-layered Moving Target Defense (MTD) for ransomware mitigation.
+User-space SIMULATION: every file access goes through VirtualFS, which applies
+four defense layers plus a context layer. Pure standard library, works on
+Windows/Linux/Mac.
 
   L1  extension + magic-byte mutation
   L2  multi-depth decoy (honeyfile) traps

@@ -2,11 +2,12 @@
 SAFE ransomware simulator. It only touches files inside the test workspace and
 only through VirtualFS. No real malware is used anywhere in this project.
 
-Traversal modes (from the slide-deck gap analysis):
+Traversal modes:
   dfs    depth-first walk, encrypts everything
   bfs    breadth-first walk, encrypts everything
   random random directory / file order, encrypts everything
   ext    depth-first, only encrypts files with known document extensions
+The benchmark's "spoof" attack is dfs run under the trusted backup agent's pid.
 """
 import hashlib
 import os
